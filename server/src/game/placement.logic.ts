@@ -1,6 +1,6 @@
 import { BOARD_SIZE, inBounds } from './board';
 import type { Cell, Coord, Direction, Ship, ShipKind } from './types';
-import { SHIP_SPECS } from './types';
+import { FLEET_KINDS, SHIP_SPECS } from './types';
 
 export type PlacementRule = {
   disallowAdjacent: boolean; // includes diagonal adjacency
@@ -84,10 +84,9 @@ export function placeShip(
 }
 
 export function allShipsPlaced(ships: Ship[]): boolean {
-  const kinds: ShipKind[] = ['carrier', 'battleship', 'cruiser', 'submarine', 'destroyer'];
   const counts = new Map<ShipKind, number>();
   for (const s of ships) counts.set(s.kind, (counts.get(s.kind) ?? 0) + 1);
-  return kinds.every((k) => (counts.get(k) ?? 0) === 1);
+  return FLEET_KINDS.every((k) => (counts.get(k) ?? 0) === 1);
 }
 
 export function resetBoardKeepingSize(board: Cell[][]): void {

@@ -37,7 +37,7 @@ describe('shot.logic', () => {
     p2.ships = [
       {
         id: 's1',
-        kind: 'destroyer',
+        kind: 's2_1',
         size: 2,
         positions: [
           { x: 0, y: 0 },
@@ -72,7 +72,7 @@ describe('shot.logic', () => {
     p2.ships = [
       {
         id: 's1',
-        kind: 'destroyer',
+        kind: 's1_1',
         size: 1,
         positions: [{ x: 0, y: 0 }],
         hits: 0,

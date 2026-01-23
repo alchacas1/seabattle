@@ -5,35 +5,35 @@ import { canPlaceShip, placeShip } from './placement.logic';
 describe('placement.logic', () => {
   it('rejects out of bounds placement', () => {
     const board = createBoard('empty');
-    const res = canPlaceShip(board, { x: 8, y: 0 }, 'horizontal', 'carrier'); // size 5
+    const res = canPlaceShip(board, { x: 7, y: 0 }, 'horizontal', 's4_1'); // size 4
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.reason).toBe('out_of_bounds');
   });
 
   it('rejects overlap', () => {
     const board = createBoard('empty');
-    const first = placeShip(board, 's1', { x: 0, y: 0 }, 'horizontal', 'destroyer');
+    const first = placeShip(board, 's1', { x: 0, y: 0 }, 'horizontal', 's2_1');
     expect(first.ok).toBe(true);
 
-    const second = canPlaceShip(board, { x: 0, y: 0 }, 'vertical', 'submarine');
+    const second = canPlaceShip(board, { x: 0, y: 0 }, 'vertical', 's3_1');
     expect(second.ok).toBe(false);
     if (!second.ok) expect(second.reason).toBe('overlap');
   });
 
   it('rejects adjacency (including diagonal) by default', () => {
     const board = createBoard('empty');
-    const first = placeShip(board, 's1', { x: 0, y: 0 }, 'horizontal', 'destroyer');
+    const first = placeShip(board, 's1', { x: 0, y: 0 }, 'horizontal', 's2_1');
     expect(first.ok).toBe(true);
 
     // Diagonal adjacency at (2,1) touches destroyer at (1,0)
-    const second = canPlaceShip(board, { x: 2, y: 1 }, 'horizontal', 'destroyer');
+    const second = canPlaceShip(board, { x: 2, y: 1 }, 'horizontal', 's2_2');
     expect(second.ok).toBe(false);
     if (!second.ok) expect(second.reason).toBe('adjacent');
   });
 
   it('places ship and writes board cells', () => {
     const board = createBoard('empty');
-    const placed = placeShip(board, 's1', { x: 3, y: 3 }, 'vertical', 'cruiser');
+    const placed = placeShip(board, 's1', { x: 3, y: 3 }, 'vertical', 's3_1');
     expect(placed.ok).toBe(true);
     expect(board[3][3].state).toBe('ship');
     expect(board[4][3].state).toBe('ship');

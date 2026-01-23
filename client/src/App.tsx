@@ -5,7 +5,7 @@ import { useGameStore } from './store/gameStore';
 import { Board } from './components/Board';
 import { tryPlaceAllShipsLocally } from './lib/autoplace';
 import type { ShipKind } from './game/types';
-import { SHIP_SPECS } from './game/types';
+import { FLEET_KINDS, SHIP_SPECS } from './game/types';
 import { canPlaceOnLocalBoard, computeShipCells } from './lib/placementPreview';
 
 function isShipKind(value: string): value is ShipKind {
@@ -58,7 +58,7 @@ function App() {
   const myDisplayName = me?.name ?? playerName;
   const oppDisplayName = opp?.name ?? (opponentJoined ? 'Rival' : 'Esperando...');
 
-  const allPlaced = (Object.values(placedKinds) as boolean[]).every(Boolean);
+  const allPlaced = FLEET_KINDS.every((k) => placedKinds[k]);
 
   const placementOverlays = useMemo(() => {
     if (phase !== 'placing') return undefined;
@@ -192,8 +192,7 @@ function App() {
         markKindPlaced(kind);
         setDraggingKind(null);
 
-        const remaining = (Object.keys(placedKinds) as ShipKind[]).filter((k2) => !getPlacedAfter(k2, kind));
-        const next = remaining[0] ?? null;
+        const next = FLEET_KINDS.find((k2) => !placedKinds[k2] && k2 !== kind) ?? null;
         if (next) selectShipKind(next);
       },
     );
@@ -202,11 +201,6 @@ function App() {
   async function handlePlaceSelectedAt(x: number, y: number) {
     if (!selectedShipKind) return;
     return placeKindAt(selectedShipKind, x, y);
-  }
-
-  function getPlacedAfter(k: ShipKind, justPlaced: ShipKind): boolean {
-    if (k === justPlaced) return true;
-    return placedKinds[k];
   }
 
   function handleShipDragStart(kind: ShipKind, e: DragEvent<HTMLElement>) {
@@ -328,7 +322,7 @@ function App() {
               <div className="shipPanel">
                 <div className="shipPanelTitle">Barcos</div>
                 <div className="shipList">
-                  {(Object.keys(SHIP_SPECS) as ShipKind[]).map((k) => {
+                  {FLEET_KINDS.map((k) => {
                     const placed = placedKinds[k];
                     const selected = selectedShipKind === k;
                     const dragging = draggingKind === k;

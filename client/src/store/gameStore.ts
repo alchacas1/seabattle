@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { CellState, Direction, ShipKind } from '../game/types';
+import { FLEET_KINDS, SHIP_SPECS } from '../game/types';
 import { createBoard } from '../game/board';
 
 type Phase = 'lobby' | 'placing' | 'playing' | 'finished';
@@ -63,6 +64,10 @@ function safeSetCell(board: CellState[][], x: number, y: number, value: CellStat
   board[y][x] = value;
 }
 
+function createPlacedKinds(): Record<ShipKind, boolean> {
+  return Object.fromEntries(FLEET_KINDS.map((k) => [k, false])) as Record<ShipKind, boolean>;
+}
+
 export const useGameStore = create<GameState>((set, get) => ({
   phase: 'lobby',
   playerId: null,
@@ -82,14 +87,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   toasts: [],
 
   placementDirection: 'horizontal',
-  selectedShipKind: 'carrier',
-  placedKinds: {
-    carrier: false,
-    battleship: false,
-    cruiser: false,
-    submarine: false,
-    destroyer: false,
-  },
+  selectedShipKind: FLEET_KINDS[0],
+  placedKinds: createPlacedKinds(),
 
   setPlayerId: (id) => set({ playerId: id }),
   setPlayerName: (name) => {
@@ -109,14 +108,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   resetPlacementState: () =>
     set({
       placementDirection: 'horizontal',
-      selectedShipKind: 'carrier',
-      placedKinds: {
-        carrier: false,
-        battleship: false,
-        cruiser: false,
-        submarine: false,
-        destroyer: false,
-      },
+      selectedShipKind: FLEET_KINDS[0],
+      placedKinds: createPlacedKinds(),
     }),
 
   selectShipKind: (kind) => set({ selectedShipKind: kind }),
@@ -128,7 +121,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const { myBoard } = get();
     const next = myBoard.map((row) => row.slice());
 
-    const size = ({ carrier: 5, battleship: 4, cruiser: 3, submarine: 3, destroyer: 2 } as const)[kind];
+    const size = SHIP_SPECS[kind].size;
     for (let i = 0; i < size; i++) {
       const x = direction === 'horizontal' ? start.x + i : start.x;
       const y = direction === 'vertical' ? start.y + i : start.y;

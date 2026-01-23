@@ -1,5 +1,5 @@
 import type { Direction, ShipKind } from '../game/types';
-import { SHIP_SPECS } from '../game/types';
+import { FLEET_KINDS, SHIP_SPECS } from '../game/types';
 import { BOARD_SIZE, inBounds } from '../game/board';
 
 type Placement = { kind: ShipKind; start: { x: number; y: number }; direction: Direction };
@@ -22,7 +22,7 @@ function neighborsIncludingDiagonal(x: number, y: number) {
 export function tryPlaceAllShipsLocally(): Placement[] {
   const occupied = Array.from({ length: BOARD_SIZE }, () => Array.from({ length: BOARD_SIZE }, () => false));
 
-  const kinds: ShipKind[] = ['carrier', 'battleship', 'cruiser', 'submarine', 'destroyer'];
+  const kinds: ShipKind[] = [...FLEET_KINDS];
   const placements: Placement[] = [];
 
   for (const kind of kinds) {
