@@ -1,0 +1,38 @@
+.app{min-height:100vh;background:#020617;color:#e5e7eb;display:flex;flex-direction:column;gap:16px;padding:16px;}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.title{font-size:24px;font-weight:800;letter-spacing:.5px;}
+.meta{display:flex;flex-direction:column;gap:6px;text-align:right;}
+.k{opacity:.65;margin-right:6px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;}
+.panel{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;max-width:980px;}
+.panel.wide{max-width:1200px;}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.btn{background:#2563eb;border:1px solid rgba(255,255,255,.15);color:white;border-radius:10px;padding:10px 12px;font-weight:600;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn.battle{background:#7c3aed;}
+.input{background:#0b1220;border:1px solid rgba(255,255,255,.12);color:#e5e7eb;border-radius:10px;padding:10px 12px;min-width:260px;}
+.hint{opacity:.75}
+.hint.small{font-size:12px}
+.boards{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;}
+.versus{display:flex;align-items:center;justify-content:center;font-size:42px;opacity:.8;padding:0 8px;min-height:320px}
+
+.placingHeader,.playingHeader{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.placingLayout{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.placingLeft{display:flex;flex-direction:column;gap:12px}
+.placingButtons{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.placingRight{display:flex;min-width:280px}
+
+.shipPanel{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:280px}
+.shipPanelTitle{font-weight:800;opacity:.9}
+.shipList{display:flex;flex-direction:column;gap:8px}
+.shipItem{background:#0b1220;border:1px solid rgba(255,255,255,.10);color:#e5e7eb;border-radius:12px;padding:10px 12px;text-align:left}
+.shipItem:hover{border-color:rgba(255,255,255,.22)}
+.shipItem.selected{outline:2px solid rgba(124,58,237,.9)}
+.shipItem.placed{opacity:.55}
+.shipItem.draggable{cursor:grab;}
+.shipItem.dragging{outline:2px solid rgba(34,197,94,.9);opacity:.9}
+.shipItem.draggable:active{cursor:grabbing;}
+.shipName{font-weight:800}
+.shipHint{opacity:.7;font-size:12px}
+.toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;}
+.toast{background:rgba(15,23,42,.92);border:1px solid rgba(255,255,255,.10);padding:10px 12px;border-radius:12px;max-width:360px;}
