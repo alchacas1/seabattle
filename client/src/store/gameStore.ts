@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { CellState, Direction, ShipKind } from '../game/types';
 import { FLEET_KINDS, SHIP_SPECS } from '../game/types';
-import { createBoard } from '../game/board';
+import { createBoard, inBounds } from '../game/board';
 
 type Phase = 'lobby' | 'placing' | 'playing' | 'finished';
 
@@ -62,6 +62,32 @@ type GameState = {
 function safeSetCell(board: CellState[][], x: number, y: number, value: CellState) {
   if (!board[y] || board[y][x] === undefined) return;
   board[y][x] = value;
+}
+
+function markConnectedHitsAsSunk(board: CellState[][], startX: number, startY: number) {
+  const start = board[startY]?.[startX];
+  if (start !== 'hit' && start !== 'sunk') return;
+
+  const queue: Array<{ x: number; y: number }> = [{ x: startX, y: startY }];
+  const visited = new Set<string>();
+
+  while (queue.length) {
+    const cur = queue.shift()!;
+    const key = `${cur.x},${cur.y}`;
+    if (visited.has(key)) continue;
+    visited.add(key);
+
+    if (!inBounds(cur.x, cur.y)) continue;
+    const state = board[cur.y]?.[cur.x];
+    if (state !== 'hit' && state !== 'sunk') continue;
+
+    board[cur.y][cur.x] = 'sunk';
+
+    queue.push({ x: cur.x + 1, y: cur.y });
+    queue.push({ x: cur.x - 1, y: cur.y });
+    queue.push({ x: cur.x, y: cur.y + 1 });
+    queue.push({ x: cur.x, y: cur.y - 1 });
+  }
 }
 
 function createPlacedKinds(): Record<ShipKind, boolean> {
@@ -140,6 +166,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       set((s) => {
         const next = s.enemyBoardView.map((row) => row.slice());
         safeSetCell(next, payload.at.x, payload.at.y, payload.result === 'hit' ? 'hit' : 'miss');
+
+        if (payload.result === 'hit' && payload.sunkShipId) {
+          markConnectedHitsAsSunk(next, payload.at.x, payload.at.y);
+        }
         return { enemyBoardView: next };
       });
 
@@ -148,6 +178,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       set((s) => {
         const next = s.myBoard.map((row) => row.slice());
         safeSetCell(next, payload.at.x, payload.at.y, payload.result === 'hit' ? 'hit' : 'miss');
+
+        if (payload.result === 'hit' && payload.sunkShipId) {
+          markConnectedHitsAsSunk(next, payload.at.x, payload.at.y);
+        }
         return { myBoard: next };
       });
 

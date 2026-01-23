@@ -1,4 +1,4 @@
-export type CellState = 'empty' | 'ship' | 'hit' | 'miss';
+export type CellState = 'empty' | 'ship' | 'hit' | 'sunk' | 'miss';
 
 export type Direction = 'horizontal' | 'vertical';
 

@@ -43,11 +43,13 @@
 .cell.empty{background:#0b1220}
 .cell.ship{background:#1f2937}
 .cell.hit{background:#991b1b}
+.cell.sunk{background:#ff0000}
 .cell.miss{background:#1e40af}
 
 .cell.preview-ok{background:rgba(34,197,94,.20);box-shadow:inset 0 0 0 2px rgba(34,197,94,.85)}
 .cell.preview-bad{background:rgba(239,68,68,.20);box-shadow:inset 0 0 0 2px rgba(239,68,68,.9)}
 
 .cell.hit{box-shadow:inset 0 0 0 2px rgba(255,255,255,.10)}
+.cell.sunk{box-shadow:inset 0 0 0 2px #ff0000}
 .cell.miss{box-shadow:inset 0 0 0 2px rgba(255,255,255,.10)}
 .cell:disabled{opacity:1}
