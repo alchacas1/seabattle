@@ -39,7 +39,7 @@ type GameState = {
   setOpponentJoined: (v: boolean) => void;
   setPlayers: (players: PublicPlayer[]) => void;
   markReady: (playerId: string) => void;
-  setCurrentTurn: (playerId: string) => void;
+  setCurrentTurn: (playerId: string | null) => void;
   applyShotResult: (payload: {
     by: string;
     at: { x: number; y: number };
@@ -50,7 +50,11 @@ type GameState = {
   }) => void;
 
   resetBoards: () => void;
+  setBoards: (myBoard: CellState[][], enemyBoardView: CellState[][]) => void;
   resetPlacementState: () => void;
+  setPlacedKinds: (placed: ShipKind[]) => void;
+  setReadyPlayers: (readyPlayers: Record<string, boolean>) => void;
+  setWinnerId: (winnerId: string | null) => void;
   selectShipKind: (kind: ShipKind) => void;
   togglePlacementDirection: () => void;
   markKindPlaced: (kind: ShipKind) => void;
@@ -131,12 +135,25 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   resetBoards: () => set({ myBoard: createBoard('empty'), enemyBoardView: createBoard('empty') }),
 
+  setBoards: (myBoard, enemyBoardView) => set({ myBoard, enemyBoardView }),
+
   resetPlacementState: () =>
     set({
       placementDirection: 'horizontal',
       selectedShipKind: FLEET_KINDS[0],
       placedKinds: createPlacedKinds(),
     }),
+
+  setPlacedKinds: (placed) =>
+    set(() => {
+      const next = createPlacedKinds();
+      for (const k of placed) next[k] = true;
+      const selected = FLEET_KINDS.find((k) => !next[k]) ?? null;
+      return { placedKinds: next, selectedShipKind: selected };
+    }),
+
+  setReadyPlayers: (readyPlayers) => set({ readyPlayers }),
+  setWinnerId: (winnerId) => set({ winnerId }),
 
   selectShipKind: (kind) => set({ selectedShipKind: kind }),
   togglePlacementDirection: () =>

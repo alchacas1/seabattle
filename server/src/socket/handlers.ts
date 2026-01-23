@@ -1,13 +1,26 @@
 import type { Server as IOServer, Socket } from 'socket.io';
 import { randomUUID } from 'crypto';
 import type { Game } from '../game/types';
-import { createGame, joinGame, placeShipForPlayer, resetPlacements, setPlayerReady, performShot, getOpponent } from '../game/game.logic';
-import type { Direction, ShipKind } from '../game/types';
+import { createGame, joinGame, placeShipForPlayer, resetPlacements, setPlayerReady, performShot, getOpponent, getPlayer } from '../game/game.logic';
+import type { CellState, Direction, ShipKind } from '../game/types';
+import { FLEET_KINDS } from '../game/types';
 
 type ServerToClientEvents = {
   connected: (payload: { playerId: string }) => void;
   gameCreated: (payload: { gameId: string }) => void;
   gameJoined: (payload: { gameId: string; youAre: 'p1' | 'p2' }) => void;
+  gameState: (payload: {
+    gameId: string;
+    youAre: 'p1' | 'p2';
+    status: 'waiting' | 'placing' | 'playing' | 'finished';
+    players: Array<{ id: string; name: string }>;
+    readyPlayers: Record<string, boolean>;
+    currentTurn?: string;
+    winnerId?: string;
+    myBoard: CellState[][];
+    enemyBoardView: CellState[][];
+    placedKinds: ShipKind[];
+  }) => void;
   playerJoined: (payload: { playerId: string }) => void;
   playersUpdated: (payload: { players: Array<{ id: string; name: string }> }) => void;
   placementUpdated: (payload: { ok: true } | { ok: false; reason: string }) => void;
@@ -58,6 +71,7 @@ type SocketData = {
 export type SeaBattleSocket = Socket<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>;
 
 const games = new Map<string, Game>();
+const playerSockets = new Map<string, string>(); // playerId -> socket.id
 
 function normalizeName(name: string): string {
   const trimmed = name.trim().slice(0, 18);
@@ -73,6 +87,50 @@ function emitPlayers(io: IOServer<ClientToServerEvents, ServerToClientEvents>, g
   io.to(roomId(gameId)).emit('playersUpdated', { players });
 }
 
+function boardToMatrix(board: Array<Array<{ state: CellState }>>, revealShips: boolean): CellState[][] {
+  return board.map((row) =>
+    row.map((cell) => {
+      if (!revealShips && cell.state === 'ship') return 'empty';
+      return cell.state;
+    }),
+  );
+}
+
+function getRole(game: Game, playerId: string): 'p1' | 'p2' {
+  return game.players[0].id === playerId ? 'p1' : 'p2';
+}
+
+function emitGameStateToSocket(socket: SeaBattleSocket, game: Game, playerId: string) {
+  const me = getPlayer(game, playerId);
+  const opp = getOpponent(game, playerId);
+
+  const players = game.players.filter((p) => p.id).map((p) => ({ id: p.id, name: p.name || 'Jugador' }));
+  const readyPlayers: Record<string, boolean> = {};
+  for (const p of game.players) {
+    if (!p.id) continue;
+    readyPlayers[p.id] = !!p.ready;
+  }
+
+  socket.emit('gameState', {
+    gameId: game.id,
+    youAre: getRole(game, playerId),
+    status: game.status,
+    players,
+    readyPlayers,
+    currentTurn: game.currentTurn || undefined,
+    winnerId: game.winnerId,
+    myBoard: boardToMatrix(me.board, true),
+    enemyBoardView: boardToMatrix(opp.board, false),
+    placedKinds: me.ships.map((s) => s.kind),
+  });
+}
+
+function normalizeOrThrow(name: string): string {
+  const n = normalizeName(name);
+  if (!n.trim()) throw new Error('invalid_name');
+  return n;
+}
+
 function getGameOrThrow(gameId: string): Game {
   const g = games.get(gameId);
   if (!g) throw new Error('game_not_found');
@@ -84,10 +142,14 @@ function roomId(gameId: string): string {
 }
 
 export function attachSocketHandlers(io: IOServer<ClientToServerEvents, ServerToClientEvents>, socket: SeaBattleSocket) {
-  const playerId = randomUUID();
-  socket.data.playerId = playerId;
+  socket.data.playerId = randomUUID();
   socket.data.playerName = 'Jugador';
-  socket.emit('connected', { playerId });
+  socket.emit('connected', { playerId: socket.data.playerId });
+
+  socket.on('disconnect', () => {
+    const pid = socket.data.playerId;
+    if (playerSockets.get(pid) === socket.id) playerSockets.delete(pid);
+  });
 
   socket.on('setName', ({ name }, ack) => {
     try {
@@ -95,7 +157,7 @@ export function attachSocketHandlers(io: IOServer<ClientToServerEvents, ServerTo
       const gid = socket.data.gameId;
       if (gid) {
         const g = getGameOrThrow(gid);
-        const p = g.players.find((pl) => pl.id === playerId);
+        const p = g.players.find((pl) => pl.id === socket.data.playerId);
         if (p) p.name = socket.data.playerName;
         emitPlayers(io, gid);
       }
@@ -106,27 +168,64 @@ export function attachSocketHandlers(io: IOServer<ClientToServerEvents, ServerTo
   });
 
   socket.on('createGame', ({ name }, ack) => {
-    socket.data.playerName = normalizeName(name);
-    const g = createGame(playerId, socket.data.playerName);
+    socket.data.playerName = normalizeOrThrow(name);
+    const pid = socket.data.playerId;
+    const g = createGame(pid, socket.data.playerName);
     games.set(g.id, g);
     void socket.join(roomId(g.id));
     socket.data.gameId = g.id;
+    playerSockets.set(pid, socket.id);
     socket.emit('gameCreated', { gameId: g.id });
     socket.emit('gameJoined', { gameId: g.id, youAre: 'p1' });
     emitPlayers(io, g.id);
+    emitGameStateToSocket(socket, g, pid);
     ack?.({ gameId: g.id });
   });
 
   socket.on('joinGame', ({ gameId, name }, ack) => {
     try {
       const g = getGameOrThrow(gameId);
-      socket.data.playerName = normalizeName(name);
-      joinGame(g, playerId, socket.data.playerName);
+      const normalizedName = normalizeOrThrow(name);
+      socket.data.playerName = normalizedName;
+
+      // Rejoin-by-name: if a player with that name exists, bind this socket to that player.
+      const existing = g.players.find((p) => p.id && p.name === normalizedName);
+      let assignedPlayerId = socket.data.playerId;
+      if (existing) {
+        const currentSocketId = playerSockets.get(existing.id);
+        if (currentSocketId && currentSocketId !== socket.id) {
+          throw new Error('name_in_use');
+        }
+        assignedPlayerId = existing.id;
+      }
+
+      // If not resuming, attempt a normal join (p2) using this socket's playerId.
+      if (!existing) {
+        joinGame(g, assignedPlayerId, socket.data.playerName);
+      }
+
+      socket.data.playerId = assignedPlayerId;
       void socket.join(roomId(gameId));
       socket.data.gameId = gameId;
 
-      socket.emit('gameJoined', { gameId, youAre: 'p2' });
-      socket.to(roomId(gameId)).emit('playerJoined', { playerId });
+      playerSockets.set(assignedPlayerId, socket.id);
+
+      // Ensure client uses the authoritative playerId (important on resume).
+      socket.emit('connected', { playerId: assignedPlayerId });
+
+      const youAre = getRole(g, assignedPlayerId);
+      socket.emit('gameJoined', { gameId, youAre });
+
+      emitGameStateToSocket(socket, g, assignedPlayerId);
+
+      // Notify the opponent and refresh their snapshot too.
+      const opponent = getOpponent(g, assignedPlayerId);
+      const oppSocketId = opponent.id ? playerSockets.get(opponent.id) : undefined;
+      if (oppSocketId) {
+        io.to(oppSocketId).emit('playerJoined', { playerId: assignedPlayerId });
+        const oppSocket = io.sockets.sockets.get(oppSocketId) as SeaBattleSocket | undefined;
+        if (oppSocket) emitGameStateToSocket(oppSocket, g, opponent.id);
+      }
       emitPlayers(io, gameId);
       ack?.({ ok: true });
     } catch (e) {
@@ -138,7 +237,7 @@ export function attachSocketHandlers(io: IOServer<ClientToServerEvents, ServerTo
   socket.on('resetPlacement', ({ gameId }, ack) => {
     try {
       const g = getGameOrThrow(gameId);
-      resetPlacements(g, playerId);
+      resetPlacements(g, socket.data.playerId);
       io.to(roomId(gameId)).emit('placementUpdated', { ok: true });
       ack?.({ ok: true });
     } catch (e) {
@@ -150,7 +249,7 @@ export function attachSocketHandlers(io: IOServer<ClientToServerEvents, ServerTo
   socket.on('placeShip', ({ gameId, kind, start, direction }, ack) => {
     try {
       const g = getGameOrThrow(gameId);
-      const res = placeShipForPlayer(g, playerId, { kind, start, direction });
+      const res = placeShipForPlayer(g, socket.data.playerId, { kind, start, direction });
       io.to(roomId(gameId)).emit('placementUpdated', res);
       ack?.(res);
     } catch (e) {
@@ -163,14 +262,22 @@ export function attachSocketHandlers(io: IOServer<ClientToServerEvents, ServerTo
   socket.on('setReady', ({ gameId }, ack) => {
     try {
       const g = getGameOrThrow(gameId);
-      const res = setPlayerReady(g, playerId);
+      const res = setPlayerReady(g, socket.data.playerId);
       if (!res.ok) {
         socket.emit('error', { message: res.reason });
         ack?.({ ok: false, reason: res.reason });
         return;
       }
 
-      io.to(roomId(gameId)).emit('playerReady', { playerId });
+      io.to(roomId(gameId)).emit('playerReady', { playerId: socket.data.playerId });
+
+      // Keep snapshots consistent for reconnects and UI state.
+      emitGameStateToSocket(socket, g, socket.data.playerId);
+      const opp = getOpponent(g, socket.data.playerId);
+      const oppSocketId = opp.id ? playerSockets.get(opp.id) : undefined;
+      const oppSocket = oppSocketId ? (io.sockets.sockets.get(oppSocketId) as SeaBattleSocket | undefined) : undefined;
+      if (oppSocket) emitGameStateToSocket(oppSocket, g, opp.id);
+
       if (g.status === 'playing') {
         io.to(roomId(gameId)).emit('gameStarted', { currentTurn: g.currentTurn });
         io.to(roomId(gameId)).emit('turnChanged', { currentTurn: g.currentTurn });
@@ -186,9 +293,10 @@ export function attachSocketHandlers(io: IOServer<ClientToServerEvents, ServerTo
   socket.on('shoot', ({ gameId, x, y }, ack) => {
     try {
       const g = getGameOrThrow(gameId);
-      const shot = performShot(g, playerId, x, y);
+      const pid = socket.data.playerId;
+      const shot = performShot(g, pid, x, y);
       io.to(roomId(gameId)).emit('shotResult', {
-        by: playerId,
+        by: pid,
         at: { x, y },
         result: shot.type,
         sunkShipId: shot.sunkShipId,
@@ -207,7 +315,7 @@ export function attachSocketHandlers(io: IOServer<ClientToServerEvents, ServerTo
       }
 
       // Defensive: ensure opponent exists and is in room (no-op)
-      void getOpponent(g, playerId);
+      void getOpponent(g, pid);
 
       ack?.({ ok: true });
     } catch (e) {

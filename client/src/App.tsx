@@ -13,6 +13,8 @@ function isShipKind(value: string): value is ShipKind {
 }
 
 const SIZE_ORDER = [4, 3, 2, 1] as const;
+const SAVED_GAME_ID_KEY = 'seabattle:savedGameId';
+const SAVED_GAME_NAME_KEY = 'seabattle:savedGameName';
 
 async function copyToClipboard(text: string): Promise<boolean> {
   try {
@@ -62,6 +64,10 @@ function App() {
     applyShotResult,
     resetBoards,
     resetPlacementState,
+    setBoards,
+    setPlacedKinds,
+    setReadyPlayers,
+    setWinnerId,
     placementDirection,
     selectedShipKind,
     placedKinds,
@@ -72,10 +78,31 @@ function App() {
     addToast,
   } = useGameStore();
 
-  const [joinCode, setJoinCode] = useState('');
+  const [joinCode, setJoinCode] = useState(() => localStorage.getItem(SAVED_GAME_ID_KEY) ?? '');
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
   const [draggingKind, setDraggingKind] = useState<ShipKind | null>(null);
   const isMyTurn = !!playerId && currentTurn === playerId;
+
+  useEffect(() => {
+    const shouldSave = !!gameId && (phase !== 'finished' || opponentJoined);
+    if (shouldSave) {
+      localStorage.setItem(SAVED_GAME_ID_KEY, gameId!);
+      localStorage.setItem(SAVED_GAME_NAME_KEY, playerName);
+    } else {
+      localStorage.removeItem(SAVED_GAME_ID_KEY);
+      localStorage.removeItem(SAVED_GAME_NAME_KEY);
+    }
+  }, [gameId, phase, opponentJoined, playerName]);
+
+  useEffect(() => {
+    const savedGameId = localStorage.getItem(SAVED_GAME_ID_KEY);
+    const savedName = localStorage.getItem(SAVED_GAME_NAME_KEY);
+    if (phase !== 'lobby') return;
+    if (savedGameId && !joinCode) setJoinCode(savedGameId);
+    if (savedName && savedName.trim() && savedName !== playerName) {
+      setPlayerName(savedName);
+    }
+  }, [phase, joinCode, playerName, setPlayerName]);
 
   const me = players.find((p) => p.id === playerId);
   const opp = players.find((p) => p.id !== playerId);
@@ -100,10 +127,22 @@ function App() {
     socket.on('connected', ({ playerId }) => setPlayerId(playerId));
     socket.on('gameJoined', ({ gameId, youAre }) => {
       setGame(gameId, youAre);
-      setPhase('placing');
-      resetBoards();
-      resetPlacementState();
       addToast(`Entraste a la partida ${gameId} (${youAre}).`);
+    });
+
+    socket.on('gameState', (s) => {
+      setGame(s.gameId, s.youAre);
+      setPlayers(s.players);
+      setOpponentJoined(s.players.length >= 2);
+      setReadyPlayers(s.readyPlayers);
+      setBoards(s.myBoard, s.enemyBoardView);
+      setPlacedKinds(s.placedKinds);
+      setWinnerId(s.winnerId ?? null);
+      if (s.status === 'waiting') setPhase('lobby');
+      else if (s.status === 'playing') setPhase('playing');
+      else if (s.status === 'finished') setPhase('finished');
+      else setPhase('placing');
+      setCurrentTurn(s.currentTurn ?? null);
     });
     socket.on('playerJoined', () => setOpponentJoined(true));
     socket.on('playersUpdated', ({ players }) => setPlayers(players));
@@ -126,6 +165,7 @@ function App() {
       socket.off('gameStarted');
       socket.off('turnChanged');
       socket.off('shotResult');
+      socket.off('gameState');
       socket.off('error');
     };
   }, [
@@ -135,6 +175,10 @@ function App() {
     setPhase,
     resetBoards,
     resetPlacementState,
+    setBoards,
+    setPlacedKinds,
+    setReadyPlayers,
+    setWinnerId,
     addToast,
     setOpponentJoined,
     setPlayers,
@@ -149,6 +193,12 @@ function App() {
 
   async function handleJoin() {
     if (!joinCode.trim()) return;
+    const savedGameId = localStorage.getItem(SAVED_GAME_ID_KEY);
+    const savedName = localStorage.getItem(SAVED_GAME_NAME_KEY);
+    if (savedGameId && savedName && joinCode.trim() === savedGameId && playerName !== savedName) {
+      addToast(`Usa el mismo nombre para reingresar: ${savedName}`);
+      return;
+    }
     socket.emit('joinGame', { gameId: joinCode.trim(), name: playerName }, (res) => {
       if (!res.ok) addToast(`No se pudo unir: ${res.reason}`);
     });
@@ -451,7 +501,7 @@ function App() {
           <div className="playingHeader">
             <h2>Batalla</h2>
             <div className="hint">
-              Turno: <span className="mono">{currentTurn?.toString() ?? '-'}</span> {isMyTurn ? '(tuyo)' : '(rival)'}
+                  Turno: <span className="mono">{currentTurn?.slice(0, 8) ?? '-'}</span> {isMyTurn ? '(tuyo)' : '(rival)'}
             </div>
           </div>
           <div className="boards">

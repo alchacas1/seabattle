@@ -1,9 +1,22 @@
 import { io, type Socket } from 'socket.io-client';
+import type { CellState, ShipKind } from '../game/types';
 
 export type ServerToClientEvents = {
   connected: (payload: { playerId: string }) => void;
   gameCreated: (payload: { gameId: string }) => void;
   gameJoined: (payload: { gameId: string; youAre: 'p1' | 'p2' }) => void;
+  gameState: (payload: {
+    gameId: string;
+    youAre: 'p1' | 'p2';
+    status: 'waiting' | 'placing' | 'playing' | 'finished';
+    players: Array<{ id: string; name: string }>;
+    readyPlayers: Record<string, boolean>;
+    currentTurn?: string;
+    winnerId?: string;
+    myBoard: CellState[][];
+    enemyBoardView: CellState[][];
+    placedKinds: ShipKind[];
+  }) => void;
   playerJoined: (payload: { playerId: string }) => void;
   playersUpdated: (payload: { players: Array<{ id: string; name: string }> }) => void;
   placementUpdated: (payload: { ok: true } | { ok: false; reason: string }) => void;
