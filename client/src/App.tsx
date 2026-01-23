@@ -12,6 +12,8 @@ function isShipKind(value: string): value is ShipKind {
   return Object.prototype.hasOwnProperty.call(SHIP_SPECS, value);
 }
 
+const SIZE_ORDER = [4, 3, 2, 1] as const;
+
 function App() {
   const socket = useMemo(() => getSocket(), []);
 
@@ -192,8 +194,15 @@ function App() {
         markKindPlaced(kind);
         setDraggingKind(null);
 
-        const next = FLEET_KINDS.find((k2) => !placedKinds[k2] && k2 !== kind) ?? null;
-        if (next) selectShipKind(next);
+        // Select consecutively: keep same size while available, then go to next size group.
+        const placedSize = SHIP_SPECS[kind].size;
+        const nextSameSize = FLEET_KINDS.find((k2) => !placedKinds[k2] && SHIP_SPECS[k2].size === placedSize && k2 !== kind);
+        const nextAny =
+          nextSameSize ??
+          SIZE_ORDER.flatMap((size) => FLEET_KINDS.filter((k2) => SHIP_SPECS[k2].size === size)).find((k2) => !placedKinds[k2] && k2 !== kind) ??
+          null;
+
+        if (nextAny) selectShipKind(nextAny);
       },
     );
   }
@@ -320,30 +329,55 @@ function App() {
 
             <div className="placingRight">
               <div className="shipPanel">
-                <div className="shipPanelTitle">Barcos</div>
+                <div className="shipPanelHeader">
+                  <div className="shipPanelTitle">Barcos</div>
+                  <div className="shipPanelProgress mono">
+                    {FLEET_KINDS.filter((k) => placedKinds[k]).length}/{FLEET_KINDS.length}
+                  </div>
+                </div>
+                <div className="hint small">Arrastra al tablero o clic para seleccionar. Usa “Rotar” para cambiar orientación.</div>
                 <div className="shipList">
-                  {FLEET_KINDS.map((k) => {
-                    const placed = placedKinds[k];
-                    const selected = selectedShipKind === k;
-                    const dragging = draggingKind === k;
+                  {SIZE_ORDER.map((size) => {
+                    const kindsInGroup = FLEET_KINDS.filter((k) => SHIP_SPECS[k].size === size);
+                    const remainingKinds = kindsInGroup.filter((k) => !placedKinds[k]);
+                    const remaining = remainingKinds.length;
+                    const first = remainingKinds[0] ?? null;
+                    const selected = !!selectedShipKind && SHIP_SPECS[selectedShipKind].size === size;
+                    const dragging = !!draggingKind && SHIP_SPECS[draggingKind].size === size;
+
+                    const label = `${size}x1${size === 4 ? '' : ` (${remaining})`}`;
+
                     return (
                       <button
-                        key={k}
+                        key={`group-${size}`}
                         className={
                           'shipItem' +
-                          (placed ? ' placed' : '') +
+                          (remaining === 0 ? ' placed' : '') +
                           (selected ? ' selected' : '') +
-                          (!placed ? ' draggable' : '') +
+                          (remaining > 0 ? ' draggable' : '') +
                           (dragging ? ' dragging' : '')
                         }
-                        onClick={() => selectShipKind(k)}
-                        disabled={placed}
-                        draggable={!placed}
-                        onDragStart={(e) => handleShipDragStart(k, e)}
+                        onClick={() => {
+                          if (!first) return;
+                          selectShipKind(first);
+                        }}
+                        disabled={remaining === 0}
+                        draggable={remaining > 0}
+                        onDragStart={(e) => {
+                          if (!first) return;
+                          handleShipDragStart(first, e);
+                        }}
                         onDragEnd={handleShipDragEnd}
                       >
-                        <div className="shipName">{SHIP_SPECS[k].label}</div>
-                        <div className="shipHint">{placed ? 'Colocado' : 'Arrastra o click para seleccionar'}</div>
+                        <div className="shipTopRow">
+                          <div className="shipName">{label}</div>
+                          {remaining === 0 && <div className="shipBadge">Listo</div>}
+                        </div>
+                        <div className="shipSizeRow" aria-hidden>
+                          {Array.from({ length: size }).map((_, i) => (
+                            <span key={i} className="shipBlock" />
+                          ))}
+                        </div>
                       </button>
                     );
                   })}
