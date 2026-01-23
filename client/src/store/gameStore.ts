@@ -159,10 +159,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
-  addToast: (message) =>
-    set((s) => ({
-      toasts: [...s.toasts, { id: crypto.randomUUID(), message }].slice(-3),
-    })),
+  addToast: (message) => {
+    const id = crypto.randomUUID();
+    set((s) => ({ toasts: [...s.toasts, { id, message }].slice(-3) }));
+
+    window.setTimeout(() => {
+      set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
+    }, 2000);
+  },
 
   clearToasts: () => set({ toasts: [] }),
 }));
