@@ -30,7 +30,10 @@ URLs por defecto:
 
 ## Config
 
-- Frontend usa `VITE_SERVER_URL` (opcional). Default: `http://localhost:3001`.
+- Frontend usa `VITE_SERVER_URL` (opcional).
+	- En dev (sin env): default `http://localhost:3001`.
+	- En prod (sin env): usa `window.location.origin` (útil si el backend queda en el mismo dominio via proxy/rewrites).
+	- En Vercel: configura `VITE_SERVER_URL` con la URL pública del backend.
 
 ## Estructura
 

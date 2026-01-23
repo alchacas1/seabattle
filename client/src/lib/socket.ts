@@ -49,9 +49,20 @@ export type ClientToServerEvents = {
 
 let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
 
+function resolveServerUrl(): string {
+  const fromEnv = (import.meta.env.VITE_SERVER_URL as string | undefined)?.trim();
+  if (fromEnv) return fromEnv;
+
+  // Dev: by default the server runs on a different port.
+  if (import.meta.env.DEV) return 'http://localhost:3001';
+
+  // Prod: if you serve/proxy the server under the same domain (e.g. via rewrites), this works.
+  return window.location.origin;
+}
+
 export function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {
   if (socket) return socket;
-  const url = (import.meta.env.VITE_SERVER_URL as string | undefined) ?? 'http://localhost:3001';
-  socket = io(url, { transports: ['websocket'] });
+  const url = resolveServerUrl();
+  socket = io(url);
   return socket;
 }
