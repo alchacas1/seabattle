@@ -3,11 +3,15 @@
 .title{font-size:24px;font-weight:800;letter-spacing:.5px;}
 .meta{display:flex;flex-direction:column;gap:6px;text-align:right;}
 .k{opacity:.65;margin-right:6px}
+.copyId{background:transparent;border:0;padding:0;color:#e5e7eb;text-decoration:underline;text-decoration-color:rgba(255,255,255,.25);text-underline-offset:3px;cursor:pointer}
+.copyId:hover{color:white;text-decoration-color:rgba(255,255,255,.5)}
+.copyId:disabled{opacity:.6;cursor:default;text-decoration:none}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;}
 .panel{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;max-width:980px;width:100%;box-sizing:border-box;}
 .panel.wide{max-width:1200px;}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
 .btn{background:#2563eb;border:1px solid rgba(255,255,255,.15);color:white;border-radius:10px;padding:10px 12px;font-weight:600;}
+.btn.secondary{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14);color:#e5e7eb}
 .btn:disabled{opacity:.5;cursor:not-allowed;}
 .btn.battle{background:#7c3aed;}
 .input{background:#0b1220;border:1px solid rgba(255,255,255,.12);color:#e5e7eb;border-radius:10px;padding:10px 12px;min-width:260px;}

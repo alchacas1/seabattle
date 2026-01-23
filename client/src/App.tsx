@@ -14,6 +14,28 @@ function isShipKind(value: string): value is ShipKind {
 
 const SIZE_ORDER = [4, 3, 2, 1] as const;
 
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const el = document.createElement('textarea');
+      el.value = text;
+      el.setAttribute('readonly', '');
+      el.style.position = 'fixed';
+      el.style.left = '-9999px';
+      document.body.appendChild(el);
+      el.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(el);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+}
+
 function App() {
   const socket = useMemo(() => getSocket(), []);
 
@@ -130,6 +152,27 @@ function App() {
     socket.emit('joinGame', { gameId: joinCode.trim(), name: playerName }, (res) => {
       if (!res.ok) addToast(`No se pudo unir: ${res.reason}`);
     });
+  }
+
+  async function handlePasteJoinCode() {
+    try {
+      const text = await navigator.clipboard.readText();
+      const normalized = text.trim();
+      if (!normalized) {
+        addToast('Portapapeles vacío.');
+        return;
+      }
+      setJoinCode(normalized);
+      addToast('ID pegado.');
+    } catch {
+      addToast('No se pudo leer el portapapeles.');
+    }
+  }
+
+  async function handleCopyGameId() {
+    if (!gameId) return;
+    const ok = await copyToClipboard(gameId);
+    addToast(ok ? 'Game ID copiado.' : 'No se pudo copiar.');
   }
 
   async function handleAutoPlace() {
@@ -257,7 +300,16 @@ function App() {
             <span className="k">rival</span> <span className="v">{oppDisplayName}</span>
           </div>
           <div>
-            <span className="k">game</span> <span className="v mono">{gameId ?? '-'}</span>
+            <span className="k">game</span>{' '}
+            <button
+              type="button"
+              className="copyId mono"
+              onClick={() => void handleCopyGameId()}
+              disabled={!gameId}
+              title={gameId ? 'Click para copiar' : ''}
+            >
+              {gameId ?? '-'}
+            </button>
           </div>
         </div>
       </header>
@@ -283,13 +335,18 @@ function App() {
               className="input"
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void handleJoin();
+              }}
               placeholder="Game ID"
             />
+            <button className="btn secondary" onClick={() => void handlePasteJoinCode()}>
+              Pegar
+            </button>
             <button className="btn" onClick={handleJoin}>
               Unirse
             </button>
           </div>
-          <div className="hint">Backend: {((import.meta.env.VITE_SERVER_URL as string | undefined) ?? 'http://localhost:3001')}</div>
         </div>
       )}
 
@@ -394,7 +451,7 @@ function App() {
           <div className="playingHeader">
             <h2>Batalla</h2>
             <div className="hint">
-              Turno: <span className="mono">{currentTurn?.slice(0, 8) ?? '-'}</span> {isMyTurn ? '(tuyo)' : '(rival)'}
+              Turno: <span className="mono">{currentTurn?.toString() ?? '-'}</span> {isMyTurn ? '(tuyo)' : '(rival)'}
             </div>
           </div>
           <div className="boards">
