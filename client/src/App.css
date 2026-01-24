@@ -46,6 +46,9 @@
 .toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;}
 .toast{background:rgba(15,23,42,.92);border:1px solid rgba(255,255,255,.10);padding:10px 12px;border-radius:12px;max-width:360px;}
 
+.footer{margin-top:auto;padding-top:6px;display:flex;justify-content:center;}
+.footerText{opacity:.55;font-size:12px;}
+
 .titleRow{display:flex;align-items:center;gap:10px;}
 .logo{width:32px;height:32px;border-radius:8px;}
 

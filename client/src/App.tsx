@@ -7,6 +7,7 @@ import { tryPlaceAllShipsLocally } from './lib/autoplace';
 import type { ShipKind } from './game/types';
 import { FLEET_KINDS, SHIP_SPECS } from './game/types';
 import { canPlaceOnLocalBoard, computeShipCells } from './lib/placementPreview';
+import versionInfo from './version/version.json';
 
 function isShipKind(value: string): value is ShipKind {
   return Object.prototype.hasOwnProperty.call(SHIP_SPECS, value);
@@ -593,6 +594,10 @@ function App() {
           ))}
         </div>
       )}
+
+      <footer className="footer" aria-label="footer">
+        <span className="footerText mono">v{versionInfo.version}</span>
+      </footer>
     </div>
   );
 }
