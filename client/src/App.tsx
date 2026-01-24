@@ -83,6 +83,12 @@ function App() {
   const [draggingKind, setDraggingKind] = useState<ShipKind | null>(null);
   const isMyTurn = !!playerId && currentTurn === playerId;
 
+  const outcome = useMemo(() => {
+    if (phase !== 'finished') return null;
+    if (!winnerId || !playerId) return 'unknown' as const;
+    return winnerId === playerId ? ('win' as const) : ('lose' as const);
+  }, [phase, winnerId, playerId]);
+
   useEffect(() => {
     const shouldSave = !!gameId && (phase !== 'finished' || opponentJoined);
     if (shouldSave) {
@@ -108,6 +114,15 @@ function App() {
   const opp = players.find((p) => p.id !== playerId);
   const myDisplayName = me?.name ?? playerName;
   const oppDisplayName = opp?.name ?? (opponentJoined ? 'Rival' : 'Esperando...');
+
+  const winnerDisplayName = useMemo(() => {
+    if (!winnerId) return null;
+    const winner = players.find((p) => p.id === winnerId);
+    if (winner?.name) return winner.name;
+    if (winnerId === playerId) return myDisplayName;
+    if (opp?.id === winnerId) return oppDisplayName;
+    return winnerId.slice(0, 8);
+  }, [winnerId, players, playerId, myDisplayName, opp?.id, oppDisplayName]);
 
   const allPlaced = FLEET_KINDS.every((k) => placedKinds[k]);
 
@@ -516,12 +531,52 @@ function App() {
         <div className="panel">
           <h2>Fin</h2>
           <div className="hint">
-            Ganador: <span className="mono">{winnerId?.slice(0, 8) ?? '-'}</span>
+            Ganador: <span className="mono">{winnerDisplayName ?? '-'}</span>
           </div>
           <div className="row">
             <button className="btn" onClick={() => window.location.reload()}>
               Reiniciar cliente
             </button>
+          </div>
+        </div>
+      )}
+
+      {phase === 'finished' && (
+        <div
+          className={
+            'outcomeOverlay' +
+            (outcome === 'win' ? ' win' : outcome === 'lose' ? ' lose' : '')
+          }
+          role="dialog"
+          aria-modal="true"
+          aria-label={outcome === 'win' ? 'Ganaste' : outcome === 'lose' ? 'Perdiste' : 'Fin de la partida'}
+        >
+          <div className="outcomeBackdrop" />
+          <div className="outcomeCard">
+            <div className="outcomeSpark" aria-hidden />
+            <div className="outcomeSpark s2" aria-hidden />
+            <div className="outcomeSpark s3" aria-hidden />
+
+            <div className="outcomeTitle">
+              {outcome === 'win' && '¡GANASTE!'}
+              {outcome === 'lose' && 'PERDISTE'}
+              {outcome === 'unknown' && 'FIN'}
+            </div>
+            <div className="outcomeSubtitle">
+              {outcome === 'win' && 'Buen disparo, capitán.'}
+              {outcome === 'lose' && 'Tu flota fue hundida.'}
+              {outcome === 'unknown' && 'La partida terminó.'}
+            </div>
+
+            <div className="outcomeMeta">
+              Ganador: <span className="mono">{winnerDisplayName ?? '-'}</span>
+            </div>
+
+            <div className="outcomeActions">
+              <button className="btn" onClick={() => window.location.reload()}>
+                Jugar otra
+              </button>
+            </div>
           </div>
         </div>
       )}
