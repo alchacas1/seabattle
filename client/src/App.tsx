@@ -356,7 +356,10 @@ function App() {
   return (
     <div className="app">
       <header className="top">
-        <div className="title">Sea Battle</div>
+        <div className="titleRow">
+          <img className="logo" src="/android-chrome-192x192.png" width={32} height={32} alt="" aria-hidden="true" />
+          <div className="title">Sea Battle</div>
+        </div>
         <div className="meta">
           <div>
             <span className="k">tú</span> <span className="v">{myDisplayName}</span>

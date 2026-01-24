@@ -46,6 +46,9 @@
 .toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;}
 .toast{background:rgba(15,23,42,.92);border:1px solid rgba(255,255,255,.10);padding:10px 12px;border-radius:12px;max-width:360px;}
 
+.titleRow{display:flex;align-items:center;gap:10px;}
+.logo{width:32px;height:32px;border-radius:8px;}
+
 /* Winner / Loser overlay */
 .outcomeOverlay{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;}
 .outcomeBackdrop{position:absolute;inset:0;background:radial-gradient(1200px 800px at 50% 35%,rgba(2,6,23,.35),rgba(2,6,23,.92));backdrop-filter:blur(6px);animation:outcomeFadeIn 220ms ease-out both;}
