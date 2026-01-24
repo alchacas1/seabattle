@@ -1,9 +1,9 @@
 .app{min-height:100vh;background:#020617;color:#e5e7eb;display:flex;flex-direction:column;gap:16px;padding:16px;}
-.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
 .title{font-size:24px;font-weight:800;letter-spacing:.5px;}
-.meta{display:flex;flex-direction:column;gap:6px;text-align:right;}
+.meta{display:flex;flex-direction:column;gap:6px;text-align:right;min-width:0;}
 .k{opacity:.65;margin-right:6px}
-.copyId{background:transparent;border:0;padding:0;color:#e5e7eb;text-decoration:underline;text-decoration-color:rgba(255,255,255,.25);text-underline-offset:3px;cursor:pointer}
+.copyId{background:transparent;border:0;padding:0;color:#e5e7eb;text-decoration:underline;text-decoration-color:rgba(255,255,255,.25);text-underline-offset:3px;cursor:pointer;max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .copyId:hover{color:white;text-decoration-color:rgba(255,255,255,.5)}
 .copyId:disabled{opacity:.6;cursor:default;text-decoration:none}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;}
@@ -101,7 +101,8 @@
 @media (max-width: 720px){
 	.app{padding:12px}
 	.top{flex-direction:column;align-items:flex-start}
-	.meta{text-align:left}
+	.meta{text-align:left;width:100%}
+	.copyId{max-width:100%}
 	.panel{padding:14px}
 
 	.placingLayout{flex-direction:column}
@@ -123,4 +124,7 @@
 	.shipList{max-height:360px}
 	.toasts{left:10px;right:10px;bottom:10px}
 	.toast{max-width:none}
+
+	.outcomeTitle{font-size:34px}
+	.outcomeCard{padding:18px 14px}
 }
