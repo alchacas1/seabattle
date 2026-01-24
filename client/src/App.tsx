@@ -204,10 +204,18 @@ function App() {
   ]);
 
   async function handleCreate() {
+    if (!playerName.trim()) {
+      addToast('Ingresa un nombre para crear una partida.');
+      return;
+    }
     socket.emit('createGame', { name: playerName });
   }
 
   async function handleJoin() {
+    if (!playerName.trim()) {
+      addToast('Ingresa un nombre para unirte a una partida.');
+      return;
+    }
     if (!joinCode.trim()) return;
     const savedGameId = localStorage.getItem(SAVED_GAME_ID_KEY);
     const savedName = localStorage.getItem(SAVED_GAME_NAME_KEY);

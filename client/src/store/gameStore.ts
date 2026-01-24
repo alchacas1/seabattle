@@ -122,9 +122,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   setPlayerId: (id) => set({ playerId: id }),
   setPlayerName: (name) => {
-    const normalized = name.trim().slice(0, 18) || 'Jugador';
-    localStorage.setItem('seabattle:name', normalized);
-    set({ playerName: normalized });
+    const next = name.slice(0, 18);
+    const toPersist = next.trim();
+    if (toPersist) localStorage.setItem('seabattle:name', toPersist);
+    else localStorage.removeItem('seabattle:name');
+    set({ playerName: next });
   },
   setGame: (gameId, role) => set({ gameId, role }),
   setPhase: (phase) => set({ phase }),

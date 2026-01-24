@@ -74,8 +74,7 @@ const games = new Map<string, Game>();
 const playerSockets = new Map<string, string>(); // playerId -> socket.id
 
 function normalizeName(name: string): string {
-  const trimmed = name.trim().slice(0, 18);
-  return trimmed.length > 0 ? trimmed : 'Jugador';
+  return name.trim().slice(0, 18);
 }
 
 function emitPlayers(io: IOServer<ClientToServerEvents, ServerToClientEvents>, gameId: string) {
@@ -127,7 +126,7 @@ function emitGameStateToSocket(socket: SeaBattleSocket, game: Game, playerId: st
 
 function normalizeOrThrow(name: string): string {
   const n = normalizeName(name);
-  if (!n.trim()) throw new Error('invalid_name');
+  if (!n) throw new Error('invalid_name');
   return n;
 }
 
@@ -153,7 +152,12 @@ export function attachSocketHandlers(io: IOServer<ClientToServerEvents, ServerTo
 
   socket.on('setName', ({ name }, ack) => {
     try {
-      socket.data.playerName = normalizeName(name);
+      const next = normalizeName(name);
+      if (!next) {
+        ack?.({ ok: false, reason: 'invalid_name' });
+        return;
+      }
+      socket.data.playerName = next;
       const gid = socket.data.gameId;
       if (gid) {
         const g = getGameOrThrow(gid);
