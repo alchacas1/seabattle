@@ -1,0 +1,71 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function participantData(data) {
+      return signedIn() && (data.player1Id == request.auth.uid || data.player2Id == request.auth.uid);
+    }
+
+    function participant(gameId) {
+      return participantData(get(/databases/$(database)/documents/games/$(gameId)).data);
+    }
+
+    match /games/{gameId} {
+      allow read: if participantData(resource.data);
+      allow write: if false;
+
+      match /players/{playerId} {
+        allow read: if participant(gameId);
+        allow write: if false;
+      }
+
+      match /publicBoards/{playerId} {
+        allow read: if participant(gameId);
+        allow write: if false;
+      }
+
+      match /attacks/{attackId} {
+        allow read: if participant(gameId);
+        allow write: if false;
+      }
+
+      match /events/{eventId} {
+        allow read: if participant(gameId);
+        allow write: if false;
+      }
+
+      match /actions/{actionId} {
+        allow read, write: if false;
+      }
+
+      match /rematchRequests/{playerId} {
+        allow read, write: if false;
+      }
+    }
+
+    match /activeGames/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /privateGameData/{gameId}/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /roomCodes/{code} {
+      allow read, write: if false;
+    }
+
+    match /rateLimits/{uid} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "buildCommand": "npm run build -w @sea-battle/web",
+  "devCommand": "npm run dev -w @sea-battle/web",
+  "framework": "nextjs",
+  "installCommand": "npm install"
+}
