@@ -18,11 +18,11 @@ describe("GameBoard", () => {
     });
   });
 
-  it("uses start and body artwork with the ship orientation and sunk state", () => {
+  it("derives a destroyed ship from its attacked cells and uses its destroyed artwork", () => {
     render(
       <GameBoard
         mode="own"
-        attackedCells={{ "2-2": "HIT", "3-2": "HIT" }}
+        attackedCells={{ "2-2": "HIT", "3-2": "SUNK" }}
         ships={[
           {
             id: "horizontal",
@@ -47,7 +47,7 @@ describe("GameBoard", () => {
               { row: 2, col: 2 },
               { row: 3, col: 2 },
             ],
-            sunk: true,
+            sunk: false,
           },
         ]}
       />,
@@ -74,6 +74,13 @@ describe("GameBoard", () => {
     expect(verticalStart?.style.transform).toBe("rotate(90deg)");
     expect(verticalBody?.style.backgroundImage).toContain("baseD.png");
     expect(verticalBody?.style.transform).toBe("rotate(90deg)");
+    expect(
+      screen.getByRole("gridcell", { name: "C3, barco hundido" }),
+    ).toHaveTextContent("✕");
+    expect(
+      screen.getByRole("gridcell", { name: "D3, barco hundido" }),
+    ).toHaveTextContent("✕");
+    expect(screen.queryByText("🔥")).not.toBeInTheDocument();
   });
 
   it("exposes coordinates and selects an enemy target without attacking immediately", () => {
@@ -112,6 +119,7 @@ describe("GameBoard", () => {
     );
     expect(
       screen.getByRole("gridcell", { name: "A1, barco hundido" }),
-    ).toHaveTextContent("🔥");
+    ).toHaveTextContent("✕");
+    expect(screen.queryByText("🔥")).not.toBeInTheDocument();
   });
 });

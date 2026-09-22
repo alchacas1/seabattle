@@ -48,20 +48,34 @@ function locateShipSegment(ships: Ship[], coordinate: Coordinate) {
   return null;
 }
 
+function isShipDestroyed(
+  ship: Ship,
+  attackedCells: Record<string, AttackResult>,
+) {
+  return (
+    ship.sunk ||
+    ship.cells.every((cell) => {
+      const result = attackedCells[coordinateKey(cell)];
+      return result === "HIT" || result === "SUNK";
+    })
+  );
+}
+
 function cellPresentation(
   mode: GameBoardProps["mode"],
   attackedCells: Record<string, AttackResult>,
   coordinate: Coordinate,
   ship: Ship | undefined,
+  shipDestroyed: boolean,
 ): { label: string; symbol: string; state: string } {
   const key = coordinateKey(coordinate);
   const attack = attackedCells[key];
-  if (ship?.sunk && attack)
-    return { label: "barco hundido", symbol: "🔥", state: "sunk" };
+  if (shipDestroyed && attack)
+    return { label: "barco hundido", symbol: "✕", state: "sunk" };
   if (attack === "MISS") return { label: "agua", symbol: "●", state: "miss" };
   if (attack === "HIT") return { label: "impacto", symbol: "✕", state: "hit" };
   if (attack === "SUNK")
-    return { label: "hundido", symbol: "🔥", state: "sunk" };
+    return { label: "hundido", symbol: "✕", state: "sunk" };
   if (ship && mode !== "enemy")
     return { label: "barco propio", symbol: "■", state: "ship" };
   return { label: "desconocido", symbol: "", state: "unknown" };
@@ -92,17 +106,21 @@ export function GameBoard({
           {Array.from({ length: 10 }, (_, col) => {
             const coordinate = { row, col };
             const locatedSegment = locateShipSegment(ships, coordinate);
+            const shipDestroyed = locatedSegment
+              ? isShipDestroyed(locatedSegment.ship, attackedCells)
+              : false;
             const presentation = cellPresentation(
               mode,
               attackedCells,
               coordinate,
               locatedSegment?.ship,
+              shipDestroyed,
             );
             const coordinateLabel = `${letters[row]}${col + 1}`;
             const isSelected = selected?.row === row && selected.col === col;
             const className = `board-cell board-cell--${presentation.state}${isSelected ? " board-cell--selected" : ""}`;
             const shipArtwork = locatedSegment
-              ? locatedSegment.ship.sunk
+              ? shipDestroyed
                 ? locatedSegment.segmentIndex === 0
                   ? artwork.destroyedStart
                   : artwork.destroyedBody
