@@ -53,6 +53,20 @@ const call = async <Result>(
 ): Promise<Result> =>
   (await httpsCallable<unknown, Result>(client.functions, name)(data)).data;
 
+const waitForTurn = async (
+  client: Client,
+  gameId: string,
+  turnNumber: number,
+): Promise<void> => {
+  const deadline = Date.now() + 40_000;
+  while (Date.now() < deadline) {
+    const snapshot = await getDoc(doc(client.firestore, "games", gameId));
+    if (snapshot.get("turnNumber") === turnNumber) return;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error(`Turn ${turnNumber} was not reached before the deadline`);
+};
+
 suite("complete emulated two-player flow", () => {
   let one: Client;
   let two: Client;
@@ -176,4 +190,38 @@ suite("complete emulated two-player flow", () => {
       (await getDoc(doc(one.firestore, "games", rematch.gameId))).get("status"),
     ).toBe("PLACING_SHIPS");
   }, 120_000);
+
+  it("advances the turn when the Tasks emulator delivers the timeout early", async () => {
+    const created = await call<{ gameId: string; roomCode: string }>(
+      one,
+      "createRoom",
+      { playerName: "Capitán Uno" },
+    );
+    await call(two, "joinRoom", {
+      playerName: "Capitán Dos",
+      roomCode: created.roomCode,
+    });
+    const [autoOne, autoTwo] = await Promise.all([
+      call<{ fleet: Ship[] }>(one, "autoPlaceFleet", {
+        gameId: created.gameId,
+      }),
+      call<{ fleet: Ship[] }>(two, "autoPlaceFleet", {
+        gameId: created.gameId,
+      }),
+    ]);
+    await call(one, "confirmFleet", {
+      gameId: created.gameId,
+      actionId: randomUUID(),
+      fleet: autoOne.fleet,
+    });
+    await call(two, "confirmFleet", {
+      gameId: created.gameId,
+      actionId: randomUUID(),
+      fleet: autoTwo.fleet,
+    });
+
+    await waitForTurn(one, created.gameId, 2);
+    const advanced = await getDoc(doc(one.firestore, "games", created.gameId));
+    expect(advanced.get("currentTurnPlayerId")).toBe(two.auth.currentUser!.uid);
+  }, 60_000);
 });

@@ -17,7 +17,7 @@ const rulesSuite = process.env.FIRESTORE_EMULATOR_HOST
 rulesSuite("Firestore security boundaries", () => {
   beforeAll(async () => {
     environment = await initializeTestEnvironment({
-      projectId: "demo-sea-battle",
+      projectId: "demo-sea-battle-rules",
       firestore: {
         rules: readFileSync(resolve(process.cwd(), "firestore.rules"), "utf8"),
         host: "127.0.0.1",

@@ -20,6 +20,7 @@ dist-ssr
 **/.env.local
 .next/
 coverage/
+*.tsbuildinfo
 firestore-debug.log
 database-debug.log
 ui-debug.log

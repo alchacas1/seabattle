@@ -21,7 +21,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es">
-      <body className={`${handwriting.variable} ${sans.variable}`}>
+      <body
+        className={`${handwriting.variable} ${sans.variable}`}
+        suppressHydrationWarning
+      >
         {children}
       </body>
     </html>

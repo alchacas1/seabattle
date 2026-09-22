@@ -12,10 +12,21 @@ const firebaseConfig = {
     process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ??
     "demo-sea-battle.firebaseapp.com",
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "demo-sea-battle",
-  databaseURL:
-    process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ??
-    "http://127.0.0.1:9000?ns=demo-sea-battle-default-rtdb",
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? "1:000000000000:web:demo",
+  ...(process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL
+    ? { databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL }
+    : {}),
+  ...(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    ? { storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }
+    : {}),
+  ...(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    ? {
+        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+      }
+    : {}),
+  ...(process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    ? { measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }
+    : {}),
 };
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);

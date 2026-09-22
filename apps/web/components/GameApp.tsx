@@ -23,20 +23,7 @@ import {
   trackPresence,
 } from "@/services/game-service";
 import { useGameStore } from "@/stores/game-store";
-
-const readableError = (error: unknown): string => {
-  const message = error instanceof Error ? error.message : String(error);
-  const code = message.split("/").pop()?.replace(/[).]/g, "") ?? message;
-  const labels: Record<string, string> = {
-    "not-found": "No encontramos esa sala.",
-    "resource-exhausted": "La sala está llena o hubo demasiados intentos.",
-    "failed-precondition":
-      "La acción ya no es válida. Sincronizamos el tablero.",
-    "deadline-exceeded": "El turno ya terminó.",
-    "already-exists": "Esa coordenada ya fue atacada.",
-  };
-  return labels[code] ?? "No pudimos completar la maniobra. Intenta de nuevo.";
-};
+import { readableError } from "@/lib/error-message";
 
 export function GameApp() {
   const store = useGameStore();
