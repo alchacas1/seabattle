@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { Coordinate, Ship } from "@sea-battle/shared-types";
+import { AppFooter } from "./AppFooter";
 import { BattleScreen } from "./BattleScreen";
 import { ConnectionStatus } from "./ConnectionStatus";
 import { HomeScreen } from "./HomeScreen";
@@ -273,7 +274,7 @@ export function GameApp() {
         </div>
       )}
       {screen}
-      <footer>SEA BATTLE · Firebase authoritative multiplayer</footer>
+      <AppFooter />
     </>
   );
 }

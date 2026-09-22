@@ -5,6 +5,7 @@ export default defineConfig({
   oxc: { jsx: { runtime: "automatic" } },
   resolve: {
     alias: {
+      "@": fileURLToPath(new URL("./apps/web", import.meta.url)),
       "@sea-battle/shared-types": fileURLToPath(
         new URL("./packages/shared-types/src/index.ts", import.meta.url),
       ),

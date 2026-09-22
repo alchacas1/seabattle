@@ -6,6 +6,11 @@ import {
   type Coordinate,
   type Ship,
 } from "@sea-battle/shared-types";
+import tableroImage from "@/app/images/tablero.png";
+import shipBodyImage from "@/app/images/base.png";
+import destroyedShipBodyImage from "@/app/images/baseD.png";
+import shipStartImage from "@/app/images/ini.png";
+import destroyedShipStartImage from "@/app/images/iniD.png";
 
 interface GameBoardProps {
   mode: "own" | "enemy" | "placement";
@@ -19,17 +24,38 @@ interface GameBoardProps {
 
 const letters = "ABCDEFGHIJ";
 
+type ImageAsset = string | { src: string };
+
+const imageUrl = (asset: ImageAsset) =>
+  typeof asset === "string" ? asset : asset.src;
+
+const artwork = {
+  tile: imageUrl(tableroImage),
+  start: imageUrl(shipStartImage),
+  body: imageUrl(shipBodyImage),
+  destroyedStart: imageUrl(destroyedShipStartImage),
+  destroyedBody: imageUrl(destroyedShipBodyImage),
+};
+
+function locateShipSegment(ships: Ship[], coordinate: Coordinate) {
+  const key = coordinateKey(coordinate);
+  for (const ship of ships) {
+    const segmentIndex = ship.cells.findIndex(
+      (cell) => coordinateKey(cell) === key,
+    );
+    if (segmentIndex >= 0) return { ship, segmentIndex };
+  }
+  return null;
+}
+
 function cellPresentation(
   mode: GameBoardProps["mode"],
-  coordinate: Coordinate,
   attackedCells: Record<string, AttackResult>,
-  ships: Ship[],
+  coordinate: Coordinate,
+  ship: Ship | undefined,
 ): { label: string; symbol: string; state: string } {
   const key = coordinateKey(coordinate);
   const attack = attackedCells[key];
-  const ship = ships.find((candidate) =>
-    candidate.cells.some((cell) => coordinateKey(cell) === key),
-  );
   if (ship?.sunk && attack)
     return { label: "barco hundido", symbol: "🔥", state: "sunk" };
   if (attack === "MISS") return { label: "agua", symbol: "●", state: "miss" };
@@ -65,15 +91,49 @@ export function GameBoard({
           </div>
           {Array.from({ length: 10 }, (_, col) => {
             const coordinate = { row, col };
+            const locatedSegment = locateShipSegment(ships, coordinate);
             const presentation = cellPresentation(
               mode,
-              coordinate,
               attackedCells,
-              ships,
+              coordinate,
+              locatedSegment?.ship,
             );
             const coordinateLabel = `${letters[row]}${col + 1}`;
             const isSelected = selected?.row === row && selected.col === col;
             const className = `board-cell board-cell--${presentation.state}${isSelected ? " board-cell--selected" : ""}`;
+            const shipArtwork = locatedSegment
+              ? locatedSegment.ship.sunk
+                ? locatedSegment.segmentIndex === 0
+                  ? artwork.destroyedStart
+                  : artwork.destroyedBody
+                : locatedSegment.segmentIndex === 0
+                  ? artwork.start
+                  : artwork.body
+              : null;
+            const contents = (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="board-cell__tile"
+                  style={{ backgroundImage: `url("${artwork.tile}")` }}
+                />
+                {locatedSegment && shipArtwork && mode !== "enemy" && (
+                  <span
+                    aria-hidden="true"
+                    className="board-cell__ship"
+                    style={{
+                      backgroundImage: `url("${shipArtwork}")`,
+                      transform: `rotate(${locatedSegment.ship.orientation === "V" ? 90 : 0}deg)`,
+                    }}
+                  />
+                )}
+                {presentation.symbol && (
+                  <span className="board-cell__symbol">
+                    {presentation.symbol}
+                  </span>
+                )}
+              </>
+            );
             if (mode === "enemy") {
               return (
                 <button
@@ -85,7 +145,7 @@ export function GameBoard({
                   onClick={() => onSelect?.(coordinate)}
                   key={coordinateLabel}
                 >
-                  {presentation.symbol}
+                  {contents}
                 </button>
               );
             }
@@ -113,7 +173,7 @@ export function GameBoard({
                 }}
                 key={coordinateLabel}
               >
-                {presentation.symbol}
+                {contents}
               </div>
             );
           })}

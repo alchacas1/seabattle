@@ -432,7 +432,8 @@ input:focus {
   margin: 0 auto;
   display: grid;
   grid-template-columns: 28px repeat(10, 1fr);
-  aspect-ratio: 11 / 10.3;
+  grid-template-rows: 28px repeat(10, 1fr);
+  aspect-ratio: 1;
   filter: drop-shadow(7px 9px 0 rgba(33, 58, 99, 0.1));
 }
 .board-row {
@@ -448,47 +449,79 @@ input:focus {
   font-weight: 800;
 }
 .board-cell {
+  --board-cell-overlay: transparent;
   position: relative;
   display: grid;
   place-items: center;
+  overflow: hidden;
+  isolation: isolate;
   min-width: 0;
   padding: 0;
   border: 1px solid rgba(33, 58, 99, 0.46);
-  background: rgba(255, 255, 255, 0.44);
+  background: transparent;
   color: var(--ink);
   font-size: clamp(0.72rem, 2.6vw, 1.6rem);
   line-height: 1;
   cursor: crosshair;
 }
+.board-cell::after,
+.board-cell__tile,
+.board-cell__ship {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.board-cell::after {
+  z-index: 2;
+  content: "";
+  background: var(--board-cell-overlay);
+}
+.board-cell__tile,
+.board-cell__ship {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+.board-cell__tile {
+  z-index: 0;
+}
+.board-cell__ship {
+  z-index: 1;
+  transform-origin: center;
+}
+.board-cell__symbol {
+  position: relative;
+  z-index: 3;
+}
 button.board-cell:hover:not(:disabled) {
   z-index: 1;
-  background: rgba(103, 76, 157, 0.14);
+  --board-cell-overlay: rgba(103, 76, 157, 0.14);
   outline: 2px solid var(--violet);
 }
 .board-cell:disabled {
   cursor: default;
 }
 .board-cell--ship {
-  background: rgba(33, 58, 99, 0.12);
+  --board-cell-overlay: rgba(33, 58, 99, 0.06);
   color: var(--ink);
 }
 .board-cell--miss {
+  --board-cell-overlay: rgba(79, 111, 159, 0.1);
   color: var(--ink-light);
-  background: rgba(79, 111, 159, 0.1);
 }
 .board-cell--hit {
+  --board-cell-overlay: rgba(181, 65, 74, 0.12);
   color: var(--red);
-  background: rgba(181, 65, 74, 0.12);
   font-weight: 900;
 }
 .board-cell--sunk {
-  background: rgba(181, 65, 74, 0.2);
+  --board-cell-overlay: rgba(181, 65, 74, 0.2);
 }
 .board-cell--selected {
+  --board-cell-overlay: rgba(212, 148, 40, 0.15);
   z-index: 2;
   outline: 3px solid #d49428;
   outline-offset: -3px;
-  background: rgba(212, 148, 40, 0.15);
 }
 .battle-grid {
   display: grid;

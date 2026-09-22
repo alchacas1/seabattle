@@ -6,6 +6,76 @@ import { describe, expect, it, vi } from "vitest";
 import { GameBoard } from "./GameBoard";
 
 describe("GameBoard", () => {
+  it("renders the nautical tile artwork in every playable cell", () => {
+    render(<GameBoard mode="own" />);
+
+    const cells = screen.getAllByRole("gridcell");
+    expect(cells).toHaveLength(100);
+    cells.forEach((cell) => {
+      const tile = cell.querySelector<HTMLElement>(".board-cell__tile");
+      expect(tile).not.toBeNull();
+      expect(tile?.style.backgroundImage).toContain("tablero.png");
+    });
+  });
+
+  it("uses start and body artwork with the ship orientation and sunk state", () => {
+    render(
+      <GameBoard
+        mode="own"
+        attackedCells={{ "2-2": "HIT", "3-2": "HIT" }}
+        ships={[
+          {
+            id: "horizontal",
+            size: 2,
+            orientation: "H",
+            cells: [
+              { row: 0, col: 0 },
+              { row: 0, col: 1 },
+            ],
+            hits: [],
+            sunk: false,
+          },
+          {
+            id: "vertical-destroyed",
+            size: 2,
+            orientation: "V",
+            cells: [
+              { row: 2, col: 2 },
+              { row: 3, col: 2 },
+            ],
+            hits: [
+              { row: 2, col: 2 },
+              { row: 3, col: 2 },
+            ],
+            sunk: true,
+          },
+        ]}
+      />,
+    );
+
+    const horizontalStart = screen
+      .getByRole("gridcell", { name: "A1, barco propio" })
+      .querySelector<HTMLElement>(".board-cell__ship");
+    const horizontalBody = screen
+      .getByRole("gridcell", { name: "A2, barco propio" })
+      .querySelector<HTMLElement>(".board-cell__ship");
+    const verticalStart = screen
+      .getByRole("gridcell", { name: "C3, barco hundido" })
+      .querySelector<HTMLElement>(".board-cell__ship");
+    const verticalBody = screen
+      .getByRole("gridcell", { name: "D3, barco hundido" })
+      .querySelector<HTMLElement>(".board-cell__ship");
+
+    expect(horizontalStart?.style.backgroundImage).toContain("ini.png");
+    expect(horizontalStart?.style.transform).toBe("rotate(0deg)");
+    expect(horizontalBody?.style.backgroundImage).toContain("base.png");
+    expect(horizontalBody?.style.transform).toBe("rotate(0deg)");
+    expect(verticalStart?.style.backgroundImage).toContain("iniD.png");
+    expect(verticalStart?.style.transform).toBe("rotate(90deg)");
+    expect(verticalBody?.style.backgroundImage).toContain("baseD.png");
+    expect(verticalBody?.style.transform).toBe("rotate(90deg)");
+  });
+
   it("exposes coordinates and selects an enemy target without attacking immediately", () => {
     const onSelect = vi.fn();
     render(
