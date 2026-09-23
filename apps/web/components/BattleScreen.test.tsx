@@ -148,7 +148,9 @@ describe("BattleScreen", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "E5, desconocido" }));
 
-    expect(screen.getByRole("status")).toHaveTextContent("Atacando...");
+    expect(screen.getByRole("status", { name: "" })).toHaveTextContent(
+      "Atacando...",
+    );
     const secondTarget = screen.getByRole("button", {
       name: "E6, desconocido",
     });
@@ -170,7 +172,9 @@ describe("BattleScreen", () => {
     expect(
       screen.getByRole("button", { name: "E6, desconocido" }),
     ).toBeDisabled();
-    expect(screen.getByRole("status")).toHaveTextContent("Atacando...");
+    expect(screen.getByRole("status", { name: "" })).toHaveTextContent(
+      "Atacando...",
+    );
 
     rerender(
       battleScreen(onAttack, game, {
@@ -198,24 +202,30 @@ describe("BattleScreen", () => {
     expect(
       screen.getByRole("button", { name: "E6, desconocido" }),
     ).toBeDisabled();
-    expect(screen.getByRole("status")).toHaveTextContent("Atacando...");
+    expect(screen.getByRole("status", { name: "" })).toHaveTextContent(
+      "Atacando...",
+    );
   });
 
-  it("points the turn indicator toward the active player's board", () => {
+  it("points the attack indicator toward the board that will be attacked", () => {
     const onAttack = vi.fn().mockResolvedValue(undefined);
     const rivalTurn = { ...game, currentTurnPlayerId: "rival" };
     const { rerender } = renderBattle(onAttack, rivalTurn);
 
-    expect(screen.getByLabelText("Turno actual: Rival")).toHaveAttribute(
-      "data-active-board",
-      "enemy",
-    );
+    expect(
+      screen.getByRole("status", {
+        name: "Objetivo del ataque: Tu flota",
+      }),
+    ).toHaveClass("turn-indicator--own");
+    expect(screen.getByText("El rival ataca aquí")).toBeInTheDocument();
 
     rerender(battleScreen(onAttack));
-    expect(screen.getByLabelText("Turno actual: Capitán")).toHaveAttribute(
-      "data-active-board",
-      "own",
-    );
+    expect(
+      screen.getByRole("status", {
+        name: "Objetivo del ataque: Flota enemiga",
+      }),
+    ).toHaveClass("turn-indicator--enemy");
+    expect(screen.getByText("Atacas aquí")).toBeInTheDocument();
   });
 
   it("keeps both boards available without a mobile fleet toggle", () => {

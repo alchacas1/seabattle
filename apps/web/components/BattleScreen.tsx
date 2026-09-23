@@ -103,21 +103,14 @@ export function BattleScreen({
           />
         </div>
         <div
-          className={`turn-indicator turn-indicator--${myTurn ? "own" : "enemy"}`}
-          data-active-board={myTurn ? "own" : "enemy"}
-          aria-label={`Turno actual: ${
-            myTurn
-              ? (players[uid]?.name ?? "tú")
-              : rivalId
-                ? (players[rivalId]?.name ?? "tu rival")
-                : "tu rival"
-          }`}
-          aria-live="polite"
+          className={`turn-indicator turn-indicator--${myTurn ? "enemy" : "own"}`}
+          role="status"
+          aria-label={`Objetivo del ataque: ${myTurn ? "Flota enemiga" : "Tu flota"}`}
         >
           <span className="turn-indicator__arrow" aria-hidden="true">
             ➜
           </span>
-          <strong>{myTurn ? "Tu turno" : "Turno rival"}</strong>
+          <strong>{myTurn ? "Atacas aquí" : "El rival ataca aquí"}</strong>
         </div>
         <div className="board-panel enemy-board">
           <h2>Flota enemiga</h2>
