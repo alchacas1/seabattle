@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { GameBoard } from "./GameBoard";
+
+afterEach(cleanup);
 
 describe("GameBoard", () => {
   it("renders the nautical tile artwork in every playable cell", () => {
@@ -98,6 +100,14 @@ describe("GameBoard", () => {
     fireEvent.click(screen.getByRole("button", { name: "E5, desconocido" }));
     expect(onSelect).toHaveBeenCalledWith({ row: 4, col: 4 });
     expect(onSelect).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses command-button semantics when no selection state is provided", () => {
+    render(<GameBoard mode="enemy" onSelect={vi.fn()} />);
+
+    expect(
+      screen.getByRole("button", { name: "E5, desconocido" }),
+    ).not.toHaveAttribute("aria-pressed");
   });
 
   it("shows own ships and does not rely on color alone", () => {

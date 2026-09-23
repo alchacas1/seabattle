@@ -1,20 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import type {
-  Coordinate,
-  GameEvent,
-  PlayerState,
-  PublicBoard,
-  PublicGameState,
-  Ship,
+import {
+  coordinateKey,
+  type AttackResult,
+  type Coordinate,
+  type GameEvent,
+  type PlayerState,
+  type PublicBoard,
+  type PublicGameState,
+  type Ship,
 } from "@sea-battle/shared-types";
 import { BattleLog } from "./BattleLog";
 import { GameBoard } from "./GameBoard";
 import { TurnTimer } from "./TurnTimer";
-
-const label = (coordinate: Coordinate | null) =>
-  coordinate ? `${"ABCDEFGHIJ"[coordinate.row]}${coordinate.col + 1}` : "";
 
 export function BattleScreen({
   game,
@@ -35,11 +34,33 @@ export function BattleScreen({
   serverOffset: number;
   onAttack: (coordinate: Coordinate) => Promise<void>;
 }) {
-  const [selected, setSelected] = useState<Coordinate | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [showOwn, setShowOwn] = useState(false);
+  const [pendingAttack, setPendingAttack] = useState<Coordinate | null>(null);
+  const [orientationNotice, setOrientationNotice] = useState("");
   const rivalId = game.player1Id === uid ? game.player2Id : game.player1Id;
   const myTurn = game.currentTurnPlayerId === uid;
+  const rivalAttacks: Record<string, AttackResult> = rivalId
+    ? (boards[rivalId]?.attackedCells ?? {})
+    : {};
+  const attackPending =
+    pendingAttack !== null && !rivalAttacks[coordinateKey(pendingAttack)];
+  const activateLandscape = async () => {
+    try {
+      if (
+        !document.fullscreenElement &&
+        document.documentElement.requestFullscreen
+      ) {
+        await document.documentElement.requestFullscreen();
+      }
+      const orientation = window.screen.orientation as ScreenOrientation & {
+        lock?: (orientation: "landscape") => Promise<void>;
+      };
+      if (!orientation?.lock) throw new Error("Orientation lock unavailable");
+      await orientation.lock("landscape");
+      setOrientationNotice("Vista horizontal activada");
+    } catch {
+      setOrientationNotice("Gira el teléfono para activar la vista horizontal");
+    }
+  };
   return (
     <main className="battle-screen">
       <header className="battle-header">
@@ -57,10 +78,23 @@ export function BattleScreen({
           totalSeconds={game.rules.turnSeconds}
         />
       </header>
-      <section className="battle-grid">
-        <div
-          className={`board-panel own-board${showOwn ? " own-board--shown" : ""}`}
+      <div className="mobile-orientation-control">
+        <button
+          className="button button--compact"
+          type="button"
+          aria-label="Activar vista horizontal"
+          onClick={() => void activateLandscape()}
         >
+          <span aria-hidden="true">↻</span> Vista horizontal
+        </button>
+        {orientationNotice && (
+          <p className="orientation-notice" aria-live="polite">
+            {orientationNotice}
+          </p>
+        )}
+      </div>
+      <section className="battle-grid">
+        <div className="board-panel own-board">
           <h2>Tu flota</h2>
           <GameBoard
             mode="own"
@@ -68,45 +102,46 @@ export function BattleScreen({
             attackedCells={boards[uid]?.attackedCells ?? {}}
           />
         </div>
+        <div
+          className={`turn-indicator turn-indicator--${myTurn ? "own" : "enemy"}`}
+          data-active-board={myTurn ? "own" : "enemy"}
+          aria-label={`Turno actual: ${
+            myTurn
+              ? (players[uid]?.name ?? "tú")
+              : rivalId
+                ? (players[rivalId]?.name ?? "tu rival")
+                : "tu rival"
+          }`}
+          aria-live="polite"
+        >
+          <span className="turn-indicator__arrow" aria-hidden="true">
+            ➜
+          </span>
+          <strong>{myTurn ? "Tu turno" : "Turno rival"}</strong>
+        </div>
         <div className="board-panel enemy-board">
           <h2>Flota enemiga</h2>
           <GameBoard
             mode="enemy"
-            attackedCells={
-              rivalId ? (boards[rivalId]?.attackedCells ?? {}) : {}
-            }
-            selected={selected}
-            disabled={!myTurn || busy}
-            onSelect={setSelected}
-          />
-          <button
-            className="button button--attack"
-            type="button"
-            disabled={!myTurn || !selected || busy}
-            onClick={async () => {
-              if (!selected) return;
-              setBusy(true);
+            attackedCells={rivalAttacks}
+            disabled={!myTurn || attackPending}
+            onSelect={async (coordinate) => {
+              if (attackPending) return;
+              setPendingAttack(coordinate);
               try {
-                await onAttack(selected);
-                setSelected(null);
-              } finally {
-                setBusy(false);
+                await onAttack(coordinate);
+              } catch {
+                setPendingAttack(null);
               }
             }}
-          >
-            {selected
-              ? `Atacar ${label(selected)}`
+          />
+          <p className="attack-guidance" role="status">
+            {attackPending
+              ? "Atacando..."
               : myTurn
-                ? "Elige una coordenada"
+                ? "Toca una coordenada para atacar"
                 : "Espera tu turno"}
-          </button>
-          <button
-            className="mobile-fleet-toggle"
-            type="button"
-            onClick={() => setShowOwn((value) => !value)}
-          >
-            {showOwn ? "Ocultar mi flota" : "Ver mi flota"}
-          </button>
+          </p>
         </div>
       </section>
       <section className="paper-panel arsenal">

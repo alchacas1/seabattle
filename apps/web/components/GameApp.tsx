@@ -213,11 +213,15 @@ export function GameApp() {
         ownFleet={store.ownFleet}
         events={store.events}
         serverOffset={store.serverOffset}
-        onAttack={(coordinate: Coordinate) =>
-          run(async () => {
+        onAttack={async (coordinate: Coordinate) => {
+          setError(null);
+          try {
             await attackCell(store.gameId!, coordinate);
-          })
-        }
+          } catch (caught) {
+            setError(readableError(caught));
+            throw caught;
+          }
+        }}
       />
     );
   } else {

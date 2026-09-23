@@ -85,7 +85,7 @@ export function GameBoard({
   mode,
   attackedCells = {},
   ships = [],
-  selected = null,
+  selected,
   onSelect,
   onPlace,
   disabled = false,
@@ -158,7 +158,7 @@ export function GameBoard({
                   type="button"
                   className={className}
                   aria-label={`${coordinateLabel}, ${presentation.label}`}
-                  aria-pressed={isSelected}
+                  aria-pressed={selected === undefined ? undefined : isSelected}
                   disabled={disabled || presentation.state !== "unknown"}
                   onClick={() => onSelect?.(coordinate)}
                   key={coordinateLabel}
