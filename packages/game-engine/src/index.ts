@@ -151,6 +151,8 @@ export interface AttackOutcome {
   result: AttackResult;
   victory: boolean;
   sunkShipSize?: number;
+  sunkShipCells: Coordinate[];
+  revealedWater: Coordinate[];
   updatedFleet: Ship[];
 }
 
@@ -166,6 +168,7 @@ export function attackCell(
 
   let result: AttackResult = "MISS";
   let sunkShipSize: number | undefined;
+  let sunkShipCells: Coordinate[] | undefined;
   const updatedFleet = fleet.map((ship) => {
     if (!ship.cells.some((cell) => coordinateKey(cell) === key))
       return { ...ship, cells: [...ship.cells], hits: [...ship.hits] };
@@ -174,14 +177,46 @@ export function attackCell(
     const hits = ship.cells.filter((cell) => hitKeys.has(coordinateKey(cell)));
     const sunk = hits.length === ship.cells.length;
     result = sunk ? "SUNK" : "HIT";
-    if (sunk) sunkShipSize = ship.size;
+    if (sunk) {
+      sunkShipSize = ship.size;
+      sunkShipCells = ship.cells;
+    }
     return { ...ship, cells: [...ship.cells], hits, sunk };
   });
+  const revealedWater: Coordinate[] = [];
+  if (sunkShipCells) {
+    const occupied = new Set(
+      fleet.flatMap((ship) => ship.cells.map(coordinateKey)),
+    );
+    const revealed = new Set<string>();
+    for (const cell of sunkShipCells) {
+      for (let rowOffset = -1; rowOffset <= 1; rowOffset += 1) {
+        for (let colOffset = -1; colOffset <= 1; colOffset += 1) {
+          const coordinate = {
+            row: cell.row + rowOffset,
+            col: cell.col + colOffset,
+          };
+          const coordinateId = coordinateKey(coordinate);
+          if (
+            isCoordinateInBounds(coordinate) &&
+            !occupied.has(coordinateId) &&
+            !attacked.has(coordinateId) &&
+            !revealed.has(coordinateId)
+          ) {
+            revealed.add(coordinateId);
+            revealedWater.push(coordinate);
+          }
+        }
+      }
+    }
+  }
   const victory = updatedFleet.every((ship) => ship.sunk);
   return {
     result,
     victory,
     ...(sunkShipSize === undefined ? {} : { sunkShipSize }),
+    sunkShipCells: sunkShipCells?.map((cell) => ({ ...cell })) ?? [],
+    revealedWater,
     updatedFleet,
   };
 }

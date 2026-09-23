@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { attackCell, GameRuleError } from "./index.js";
-import type { Ship } from "@sea-battle/shared-types";
+import { coordinateKey, type Ship } from "@sea-battle/shared-types";
 
 const fleet = (): Ship[] => [
   {
@@ -42,8 +42,38 @@ describe("basic combat", () => {
     expect(second).toMatchObject({
       result: "SUNK",
       sunkShipSize: 2,
+      sunkShipCells: [
+        { row: 4, col: 4 },
+        { row: 5, col: 4 },
+      ],
       victory: false,
     });
+  });
+
+  it("reveals the unattacked water immediately surrounding a sunk ship", () => {
+    const edgeShip: Ship = {
+      id: "edge-destroyer",
+      size: 2,
+      orientation: "H",
+      cells: [
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+      ],
+      hits: [{ row: 0, col: 0 }],
+      sunk: false,
+    };
+
+    const outcome = attackCell([edgeShip], new Set(["0-0", "1-0"]), {
+      row: 0,
+      col: 1,
+    });
+
+    expect(outcome.result).toBe("SUNK");
+    expect(outcome.revealedWater.map(coordinateKey).sort()).toEqual([
+      "0-2",
+      "1-1",
+      "1-2",
+    ]);
   });
 
   it("detects victory after the last surviving ship sinks", () => {

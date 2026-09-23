@@ -67,8 +67,7 @@ export function HomeScreen({
             minLength={2}
             maxLength={32}
             required
-            placeholder="Alvaro"
-            autoComplete="nickname"
+            autoComplete="off"
           />
         </label>
         <button
@@ -90,7 +89,7 @@ export function HomeScreen({
             minLength={6}
             maxLength={6}
             pattern="[A-HJ-KM-NP-Z2-9]{6}"
-            placeholder="K7F2QX"
+            autoComplete="off"
           />
         </label>
         <button

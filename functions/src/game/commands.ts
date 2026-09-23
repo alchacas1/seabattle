@@ -185,7 +185,13 @@ export function applyAttack(
   next.publicBoards[defenderId] = {
     ...publicBoard,
     attackedCells: {
+      ...Object.fromEntries(
+        outcome.revealedWater.map((cell) => [coordinateKey(cell), "MISS"]),
+      ),
       ...publicBoard.attackedCells,
+      ...Object.fromEntries(
+        outcome.sunkShipCells.map((cell) => [coordinateKey(cell), "SUNK"]),
+      ),
       [coordinateKey(target)]: outcome.result,
     },
   };

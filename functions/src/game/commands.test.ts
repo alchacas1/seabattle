@@ -169,6 +169,51 @@ describe("attack command", () => {
     expect(retry.aggregate).toEqual(first.aggregate);
   });
 
+  it("publishes every sunk segment and surrounding water without counting extra attacks", () => {
+    const initial = ready();
+    initial.privateBoards.two!.ships = [
+      {
+        id: "corner-destroyer",
+        size: 2,
+        orientation: "H",
+        cells: [
+          { row: 0, col: 0 },
+          { row: 0, col: 1 },
+        ],
+        hits: [{ row: 0, col: 0 }],
+        sunk: false,
+      },
+    ];
+    initial.publicBoards.two!.attackedCells = {
+      "0-0": "HIT",
+      "1-0": "MISS",
+    };
+
+    const result = applyAttack(
+      initial,
+      "one",
+      "55555555-5555-4555-8555-555555555555",
+      { row: 0, col: 1 },
+      4_000,
+    );
+
+    expect(result.aggregate.publicBoards.two!.attackedCells).toEqual({
+      "0-0": "SUNK",
+      "0-1": "SUNK",
+      "0-2": "MISS",
+      "1-0": "MISS",
+      "1-1": "MISS",
+      "1-2": "MISS",
+    });
+    expect(result.aggregate.players.one?.stats).toEqual({
+      attacks: 1,
+      hits: 1,
+      misses: 0,
+      shipsSunk: 1,
+      weaponsUsed: 0,
+    });
+  });
+
   it("rejects attacks from the wrong player and after the deadline", () => {
     const initial = ready();
     expect(() =>
